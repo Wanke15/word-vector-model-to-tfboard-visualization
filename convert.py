@@ -10,7 +10,7 @@ parser.add_argument('--outdir', default='tensorboard', help="Output tensorboard 
 args = parser.parse_args()
 
 import tensorflow as tf
-from tensorflow.contrib.tensorboard.plugins import projector
+from tensorboard.plugins import projector
 import numpy as np
 import gensim
 import os
@@ -19,7 +19,12 @@ import warnings
 warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
 
 fname = args.wvmodel
-model = gensim.models.keyedvectors.KeyedVectors.load_word2vec_format(fname, binary=True)
+if fname.endswith(".bin"):
+    model = gensim.models.keyedvectors.KeyedVectors.load_word2vec_format(fname, binary=True)
+elif fname.endswith(".txt"):
+    model = gensim.models.keyedvectors.KeyedVectors.load_word2vec_format(fname, binary=False)
+else:
+    raise ValueError("Expect word2vec model format are: 'bin' or 'txt' but got: {}".format(fname))
 
 
 max_size = len(model.wv.vocab)-1
@@ -50,7 +55,7 @@ with tf.device("/cpu:0"):
 tf.global_variables_initializer().run()
 
 
-# let us create an object to Saver class which is actually used to 
+# let us create an object to Saver class which is actually used to
 #save and restore variables to and from our checkpoints
 saver = tf.train.Saver()
 
@@ -71,8 +76,3 @@ projector.visualize_embeddings(writer, config)
 
 saver.save(sess, path+'/model.ckpt', global_step=max_size)
 print("Done!")
-
-
-
-
-
